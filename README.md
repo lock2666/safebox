@@ -4,7 +4,7 @@
 **AES-256-GCM** و **PBKDF2-HMAC-SHA256** عبر Web Crypto API.
 
 > ✨ كل شيء يحدث داخل جهازك: لا يُرسل ملف أو كلمة مرور إلى أي خادم، ولا يحتاج الموقع لـ Backend.
-> 📦 صيغة الملف مطابقة تماماً لنسخة Python، فما تشفّره هنا يُفتح بـ `cli.py` والعكس.
+> 📦 صيغة الملف مطابقة تماماً لـ **Python** و **Node.js**، فما تشفّره هنا يُفتح هناك والعكس.
 
 ## 🌐 جربها الآن
 
@@ -52,28 +52,36 @@ SBOX │VERSION│KDF│ITERATIONS│KEY_CHECK│SALT │NONCE│CIPHERTEXT + Ta
 | SALT / NONCE | قيم عشوائية فريدة لكل ملف |
 | CIPHERTEXT | البيانات الوصفية (JSON) + بياناتك، مع وسم توثيق 16 بايت |
 
-## 🔗 التوافق مع نسخة Python
+## 🔗 التوافق مع النسخ الأخرى
+
+صيغة الملف **واحدة** في النسخ الثلاث (الويب · Python · Node.js):
 
 ```bash
-# شفّر في المتصفح، وافتح بالسطر الأوامر:
-python cli.py decrypt report.pdf.sbox -p "كلمة-المرور"     # ملف من المتصفح يفتح بـ Python
+# ملف شفّرته الويب → افتحه بـ Node.js
+node docs/cli-node/node.js decrypt report.pdf.sbox -p "كلمة-المرور"
 
-# أو شفّر محلياً وافتح في الموقع:
+# ملف شفّرته Node.js → افتحه بـ Python
+python cli.py decrypt report.pdf.sbox -p "كلمة-المرور"
+
+# أو شفّر محلياً وافتح في الموقع
 python cli.py encrypt report.pdf -p "كلمة-المرور"
 ```
+
+تفاصيل نسخة Node.js (بدون أي حزمة خارجية): [`docs/cli-node/`](../cli-node/README.md)
 
 ## 🧰 البنية
 
 ```
-web/                 ← الموقع المرفوع على GitHub Pages (index.html, ...)
-├── index.html      # الواجهة (4 تبويبات)
-├── style.css       # التصميم الداكن العربي RTL
-├── crypto.js       # محرك التشفير (Web Crypto) — نفس صيغة Python
-├── passwords.js    # تقييم القوة + المولّد
-└── app.js          # منطق الواجهة
+web/                       ← الموقع المرفوع على GitHub Pages
+├── index.html             # الواجهة (4 تبويبات)
+├── style.css              # التصميم الداكن العربي RTL
+├── crypto.js              # محرك التشفير (Web Crypto) — نفس صيغة Python و Node.js
+├── passwords.js           # تقييم القوة + المولّد
+└── app.js                 # منطق الواجهة
 
-# نسخة Python للتوافق (تعمل من جذر المستودع)
-crypto_core.py · passwords.py · cli.py · tests/test_crypto_core.py
+# نسختان لسطر الأوامر بصيغة موحّدة
+cli.py                     # Python
+docs/cli-node/node.js      # Node.js (بدون أي حزمة خارجية)
 ```
 
 ## ⚠️ ملاحظات أمنية
