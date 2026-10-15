@@ -1,4 +1,4 @@
-﻿# 🔐 الخزنة (SafeBox) — نسخة الويب
+# 🔐 الخزنة (SafeBox) — نسخة الويب
 
 تطبيق ويبي **ثابت** (بدون خادم) لتشفير الملفات في المتصفح باستخدام
 **AES-256-GCM** و **PBKDF2-HMAC-SHA256** عبر Web Crypto API.
@@ -56,21 +56,24 @@ SBOX │VERSION│KDF│ITERATIONS│KEY_CHECK│SALT │NONCE│CIPHERTEXT + Ta
 
 ```bash
 # شفّر في المتصفح، وافتح بالسطر الأوامر:
-python ../cli.py decrypt report.pdf.sbox -p "كلمة-المرور"
+python cli.py decrypt report.pdf.sbox -p "كلمة-المرور"     # ملف من المتصفح يفتح بـ Python
 
 # أو شفّر محلياً وافتح في الموقع:
-python ../cli.py encrypt report.pdf -p "كلمة-المرور"
+python cli.py encrypt report.pdf -p "كلمة-المرور"
 ```
 
 ## 🧰 البنية
 
 ```
-web/
+web/                 ← الموقع المرفوع على GitHub Pages (index.html, ...)
 ├── index.html      # الواجهة (4 تبويبات)
 ├── style.css       # التصميم الداكن العربي RTL
 ├── crypto.js       # محرك التشفير (Web Crypto) — نفس صيغة Python
 ├── passwords.js    # تقييم القوة + المولّد
 └── app.js          # منطق الواجهة
+
+# نسخة Python للتوافق (تعمل من جذر المستودع)
+crypto_core.py · passwords.py · cli.py · tests/test_crypto_core.py
 ```
 
 ## ⚠️ ملاحظات أمنية
