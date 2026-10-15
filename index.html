@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="الخزنة — تشفير الملفات في متصفحك بـ AES-256-GCM بدون رفعها إلى أي خادم.">
+  <title>الخزنة — تشفير الملفات في متصفحك</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+</head>
+<body>
+  <div class="container">
+    <div class="brand">
+      <div class="logo">🔐</div>
+      <div>
+        <h1>الخزنة</h1>
+        <p class="tagline">
+          شفّر ملفاتك بـ <strong>AES-256-GCM</strong> داخل متصفحك — لا يُرسل أي ملف أو كلمة مرور إلى أي خادم.
+        </p>
+      </div>
+    </div>
+
+    <div id="crypto-warning" class="warn" hidden>
+      <strong>⚠️ متصفحك لا يدعم Web Crypto.</strong><br>
+      افتح الموقع عبر رابط <strong>https://</strong> (أو على <code>localhost</code>) في متصفح حديث
+      مثل Chrome أو Edge أو Firefox أو Safari.
+    </div>
+
+    <div id="error-box" class="error" hidden></div>
+    <div id="success-box" class="success" hidden></div>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="encrypt" role="tab" aria-selected="true">🔒 تشفير ملف</button>
+      <button class="tab" data-tab="decrypt" role="tab" aria-selected="false">🔓 فك التشفير</button>
+      <button class="tab" data-tab="keygen" role="tab" aria-selected="false">🔑 توليد مفتاح</button>
+      <button class="tab" data-tab="text" role="tab" aria-selected="false">📝 تشفير نص</button>
+    </nav>
+
+    <!-- ============================ تشفير ملف ============================ -->
+    <section class="panel card" id="panel-encrypt">
+      <form id="form-encrypt" class="stack">
+        <div class="dropzone" id="drop-encrypt" data-input="encrypt-file">
+          <div class="dz-icon">⬆️</div>
+          <p class="dz-title">اسحب ملفك إلى هنا أو اضغط للاختيار</p>
+          <p class="dz-hint">أي نوع ملف — PDF، صور، فيديو، مضغوط… (حتى 64 ميغابايت)</p>
+          <input type="file" id="encrypt-file" name="file" hidden>
+        </div>
+        <p class="file-chosen" id="encrypt-file-name" hidden></p>
+
+        <div class="field">
+          <label class="field-label">طريقة الحماية</label>
+          <div class="segmented">
+            <label class="seg active"><input type="radio" name="secret_mode" value="password" checked> كلمة مرور</label>
+            <label class="seg"><input type="radio" name="secret_mode" value="key"> ملف مفتاح (.key)</label>
+          </div>
+        </div>
+
+        <div class="field" id="field-password-encrypt">
+          <label class="field-label" for="encrypt-password">كلمة المرور</label>
+          <div class="pw-row">
+            <input type="password" id="encrypt-password" name="password" placeholder="اكتب كلمة مرور قوية (16 حرفاً فأكثر)" autocomplete="new-password">
+            <button type="button" class="icon-btn" data-toggle-pw="encrypt-password" title="إظهار/إخفاء">👁️</button>
+            <button type="button" class="icon-btn" data-suggest-pw="encrypt-password" title="اقترح كلمة مرور">🎲</button>
+          </div>
+          <div class="meter" id="pw-meter-encrypt"><span></span></div>
+          <p class="meter-label" id="pw-label-encrypt">القوة: —</p>
+          <ul class="suggestions" id="pw-tips-encrypt"></ul>
+        </div>
+
+        <div class="field" id="field-key-encrypt" hidden>
+          <label class="field-label" for="encrypt-keyfile">ملف المفتاح</label>
+          <input type="file" id="encrypt-keyfile" name="key_file" accept=".key,.txt,text/plain">
+          <p class="hint">مفتاح عشوائي بطول 32–64 بايت. احتفظ به في مكان آمن — بدونه لا يمكن فك التشفير.</p>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="encrypt-preset">قوة مقاومة التخمين</label>
+          <select id="encrypt-preset" name="preset">
+            <option value="fast">سريع — 100,000 تكرار</option>
+            <option value="balanced" selected>متوازن — 600,000 تكرار (موصى به)</option>
+            <option value="paranoid">فائق — 1,200,000 تكرار</option>
+          </select>
+          <p class="hint">عدد تكرارات PBKDF2-HMAC-SHA256 داخل متصفحك. الأكثر = أبطأ للتخمين لكنه يحتاج وقتاً أطول عند التشفير.</p>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" name="hide_name" id="encrypt-hide-name">
+          أخفي اسم الملف الأصلي داخل الملف المشفّر
+        </label>
+
+        <button type="submit" class="btn" id="btn-encrypt">🔒 شفّر الملف الآن</button>
+      </form>
+    </section>
+
+    <!-- ============================ فك التشفير ============================ -->
+    <section class="panel card" id="panel-decrypt" hidden>
+      <form id="form-decrypt" class="stack">
+        <div class="dropzone" id="drop-decrypt" data-input="decrypt-file">
+          <div class="dz-icon">⬇️</div>
+          <p class="dz-title">اسحب الملف المشفّر (.sbox) إلى هنا</p>
+          <p class="dz-hint">سنقرأ ترويسة الملف داخل متصفحك لعرض خوارزميته وعدد تكراراته</p>
+          <input type="file" id="decrypt-file" name="file" hidden>
+        </div>
+        <p class="file-chosen" id="decrypt-file-name" hidden></p>
+
+        <div class="info-box" id="decrypt-info" hidden></div>
+
+        <div class="field">
+          <label class="field-label">طريقة الحماية المستخدمة</label>
+          <div class="segmented">
+            <label class="seg active"><input type="radio" name="secret_mode" value="password" checked> كلمة مرور</label>
+            <label class="seg"><input type="radio" name="secret_mode" value="key"> ملف المفتاح (.key)</label>
+          </div>
+        </div>
+
+        <div class="field" id="field-password-decrypt">
+          <label class="field-label" for="decrypt-password">كلمة المرور</label>
+          <div class="pw-row">
+            <input type="password" id="decrypt-password" name="password" placeholder="أدخل كلمة المرور نفسها المستخدمة عند التشفير" autocomplete="current-password">
+            <button type="button" class="icon-btn" data-toggle-pw="decrypt-password" title="إظهار/إخفاء">👁️</button>
+          </div>
+        </div>
+
+        <div class="field" id="field-key-decrypt" hidden>
+          <label class="field-label" for="decrypt-keyfile">ملف المفتاح</label>
+          <input type="file" id="decrypt-keyfile" name="key_file" accept=".key,.txt,text/plain">
+        </div>
+
+        <button type="submit" class="btn" id="btn-decrypt">🔓 فك التشفير واسترجاع الملف</button>
+      </form>
+    </section>
+
+    <!-- ============================ توليد مفتاح ============================ -->
+    <section class="panel card" id="panel-keygen" hidden>
+      <h3 style="margin-top:0">مفتاح عشوائي بديل عن كلمة المرور</h3>
+      <p class="hint" style="line-height:1.9">
+        يُولَّد داخل متصفحك باستخدام <strong>crypto.getRandomValues</strong> ويُحفظ في ملف <code>.key</code>.
+        استخدمه بدلاً من كلمة المرور عندما تريد أقصى قوة (لا يمكن تخمينه مهما كانت قدرة المهاجم).
+        <br>
+        ⚠️ إن فقدت هذا الملف فلا يمكن فك تشفير ملفاتك أبداً — خزّنه في أكثر من مكان آمن.
+      </p>
+      <form id="form-keygen" class="stack">
+        <div class="field">
+          <label class="field-label" for="keygen-length">طول المفتاح (بايت)</label>
+          <select id="keygen-length" name="length">
+            <option value="32" selected>32 بايت — 256 بت (موصى به)</option>
+            <option value="48">48 بايت — 384 بت</option>
+            <option value="64">64 بايت — 512 بت</option>
+          </select>
+        </div>
+        <button type="submit" class="btn" id="btn-keygen">🎯 ولّد المفتاح ونزّله</button>
+      </form>
+    </section>
+
+    <!-- ============================ تشفير نص ============================ -->
+    <section class="panel card" id="panel-text" hidden>
+      <div class="field">
+        <label class="field-label">ما الذي تريده؟</label>
+        <div class="segmented">
+          <label class="seg active"><input type="radio" name="text_mode" value="encrypt" checked> شفّر نصاً</label>
+          <label class="seg"><input type="radio" name="text_mode" value="decrypt"> فكّ نصاً مشفّراً</label>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="text-input" id="text-input-label">النص الذي تريد تشفيره</label>
+        <textarea id="text-input" rows="5" placeholder="اكتب النص السري هنا (رسالة، كلمة مرور، رابط…)"></textarea>
+        <p class="hint" id="text-input-hint">الناتج سيكون نص Base64 طويل — انسخه كاملاً واحفظه مع كلمة المرور.</p>
+      </div>
+      <div class="field">
+        <label class="field-label" for="text-password">كلمة المرور</label>
+        <div class="pw-row">
+          <input type="password" id="text-password" placeholder="كلمة مرور النص">
+          <button type="button" class="icon-btn" data-toggle-pw="text-password" title="إظهار/إخفاء">👁️</button>
+        </div>
+      </div>
+      <button type="button" class="btn" id="btn-text-run">🔒 شفّر إلى نص</button>
+      <div class="field" id="text-result-field" hidden>
+        <label class="field-label" for="text-output" id="text-output-label">النص المشفّر</label>
+        <textarea id="text-output" rows="5" readonly></textarea>
+        <button type="button" class="btn-ghost" id="btn-copy-text">📋 نسخ النتيجة</button>
+      </div>
+    </section>
+
+    <!-- ============================ بطاقة النتيجة ============================ -->
+    <div class="card result" id="result-card" hidden>
+      <h3 id="result-title" style="margin-top:0">✅ تمت العملية</h3>
+      <dl class="meta" id="result-meta"></dl>
+      <p class="note" id="result-warning" hidden></p>
+      <a class="btn" id="result-download" download>⬇️ تحميل الملف</a>
+    </div>
+
+    <!-- ============================ كيف يعمل ============================ -->
+    <div class="card">
+      <h3 style="margin-top:0">🛠️ كيف يعمل التشفير؟</h3>
+      <ul class="explain">
+        <li><strong>الخوارزمية:</strong> AES-256-GCM — تشفير وتوثيق في آن واحد، أي تعديل على الملف يُكتشف فوراً.</li>
+        <li><strong>اشتقاق المفتاح:</strong> PBKDF2-HMAC-SHA256 مع Salt عشوائي (100k–1.2M تكرار).</li>
+        <li><strong>الـ Salt و Nonce:</strong> قيم عشوائية فريدة لكل ملف، فلا يتكرر التشفير أبداً لنفس الملف.</li>
+        <li><strong>بصمة تحقق:</strong> أول 4 بايت من SHA-256 للمفتاح تُخزَّن في الترويسة لمعرفة خطأ كلمة المرور فوراً.</li>
+        <li><strong>الخصوصية:</strong> كل شيء يحدث في الذاكرة وعبر Web Crypto — لا شبكة، لا خادم، لا تسجيل.</li>
+        <li><strong>التوافق:</strong> صيغة الملف مطابقة لنسخة Python، فما تشفّره هنا يُفتح بالسطر الأوامر والعكس.</li>
+      </ul>
+      <p class="hint">
+        صيغة الملف: <code>SBOX + الإصدار + نوع KDF + التكرارات + بصمة المفتاح + Salt + Nonce + البيانات</code>.
+      </p>
+    </div>
+
+    <footer>
+      🔐 الخزنة — تشفير محلي بالكامل (AES-256-GCM + PBKDF2) داخل متصفحك.<br>
+      لا يُرسل أي ملف إلى أي خادم — لكن احفظ نسخة احتياطية من ملفاتك المهمة،
+      فإن ضاعت كلمة المرور فلا سبيل لاستعادة البيانات.
+      <br><a href="https://github.com/" id="repo-link" target="_blank" rel="noopener">المصدر على GitHub</a>
+    </footer>
+  </div>
+
+  <script src="passwords.js" defer></script>
+  <script src="crypto.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
